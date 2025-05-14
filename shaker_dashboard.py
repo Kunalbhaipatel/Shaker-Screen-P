@@ -1,4 +1,3 @@
-
 # Streamlit Pipeline for Shaker Screen Monitoring and Prediction
 import streamlit as st
 import pandas as pd
@@ -24,18 +23,22 @@ if uploaded_file:
     df.replace(-999.25, np.nan, inplace=True)
     df["Datetime"] = pd.to_datetime(df.iloc[:, 0] + " " + df.iloc[:, 1], errors='coerce')
     df.set_index("Datetime", inplace=True)
+    df = df[~df.index.duplicated(keep='first')]
+    df = df.sort_index()
 
     # --- Time Filtering --- #
     st.subheader("🕒 Time Range Filter")
-    min_date, max_date = df.index.min(), df.index.max()
-    start_time, end_time = st.slider(
-        "Select a time range to analyze",
-        min_value=min_date,
-        max_value=max_date,
-        value=(min_date, max_date),
-        format="YYYY-MM-DD HH:mm:ss"
-    )
-    df = df.loc[start_time:end_time]
+    if not df.empty:
+        min_date, max_date = df.index.min(), df.index.max()
+        if pd.notnull(min_date) and pd.notnull(max_date) and min_date != max_date:
+            start_time, end_time = st.slider(
+                "Select a time range to analyze",
+                min_value=min_date.to_pydatetime(),
+                max_value=max_date.to_pydatetime(),
+                value=(min_date.to_pydatetime(), max_date.to_pydatetime()),
+                format="YYYY-MM-DD HH:mm:ss"
+            )
+            df = df.loc[start_time:end_time]
 
     # --- Feature Engineering --- #
     st.subheader("📊 Feature Engineering")
